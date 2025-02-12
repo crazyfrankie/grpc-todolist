@@ -1,0 +1,85 @@
+syntax="proto3";
+
+package task;
+
+option go_package = "/task";
+
+import "idl/google/api/annotations.proto";
+
+message Task {
+  int32 id = 1;
+  string title = 2;
+  string content = 3;
+  int32 status = 4;
+  string utime = 5;
+}
+
+message AddTaskRequest {
+  string title = 1;
+  string content = 2;
+}
+
+message AddTaskResponse {
+
+}
+
+message ListTasksRequest {
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message UpdateTaskRequest {
+  Task task = 1;
+}
+
+message UpdateTaskResponse {
+
+}
+
+message DeleteTaskRequest {
+  int32 id = 1;
+}
+
+message DeleteTaskResponse {
+}
+
+message RecycleBinRequest {
+
+}
+
+message RecycleBinResponse {
+  repeated Task tasks = 1;
+}
+
+service TaskService {
+  rpc AddTask(AddTaskRequest) returns (AddTaskResponse) {
+    option (google.api.http) = {
+      post: "/api/tasks/add"
+      body: "*"
+    };
+  }
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
+    option (google.api.http) = {
+      get: "/api/tasks"
+    };
+  }
+  rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse) {
+    option (google.api.http) = {
+      post: "/api/tasks/update"
+      body: "*"
+    };
+  }
+  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse) {
+    option (google.api.http) = {
+      post: "/api/tasks/delete"
+      body: "*"
+    };
+  }
+  rpc RecycleBin(RecycleBinRequest) returns (RecycleBinResponse) {
+    option (google.api.http) = {
+      get: "/api/tasks/recycle"
+    };
+  }
+}

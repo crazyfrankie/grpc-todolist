@@ -1,0 +1,61 @@
+syntax="proto3";
+
+package user;
+
+option go_package = "/user";
+
+import "idl/google/api/annotations.proto";
+
+message User {
+  int32 id = 1;
+  string name = 2;
+}
+
+message RegisterRequest {
+  string name = 1;
+  string password = 2;
+}
+
+message RegisterResponse {
+  string token = 1;
+}
+
+message LoginRequest {
+  string name = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message GetUserInfoRequest {
+  int32 id = 1;
+}
+
+message GetUserInfoResponse {
+  User user = 1;
+}
+
+service UserService {
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/user/register"
+      body: "*"
+    };
+  }
+
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/user/login"
+      body: "*"
+    };
+  }
+
+  rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/user"
+    };
+  }
+}
+
