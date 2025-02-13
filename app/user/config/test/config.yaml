@@ -6,3 +6,6 @@ mysql:
 
 jwt:
   secretKey: "sD4pP0qA8sO6fZ2fF9iZ5lN9nM1rF3vL"
+
+etcd:
+  addr: "localhost:2379"

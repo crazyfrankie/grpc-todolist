@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 )
 
@@ -19,6 +20,7 @@ type Config struct {
 	Server Server `yaml:"server"`
 	MySQL  MySQL  `yaml:"mysql"`
 	JWT    JWT    `yaml:"jwt"`
+	ETCD   ETCD   `yaml:"etcd"`
 }
 
 type Server struct {
@@ -27,6 +29,10 @@ type Server struct {
 
 type MySQL struct {
 	DSN string `yaml:"dsn"`
+}
+
+type ETCD struct {
+	Addr string `yaml:"addr"`
 }
 
 type JWT struct {
@@ -54,6 +60,22 @@ func initConf() {
 
 	conf.Env = getGoEnv()
 	fmt.Printf("%#v", conf)
+
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		fmt.Println("Config file changed:", in.Name)
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Printf("Error reading config after change: %v\n", err)
+			return
+		}
+		if err := viper.Unmarshal(conf); err != nil {
+			fmt.Printf("Error unmarshalling config: %v\n", err)
+			return
+		}
+
+		fmt.Printf("Config reloaded: %#v\n", conf)
+	})
+
+	viper.WatchConfig()
 }
 
 func getGoEnv() string {

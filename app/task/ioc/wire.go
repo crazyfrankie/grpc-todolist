@@ -11,10 +11,12 @@ import (
 	"github.com/crazyfrankie/todolist/app/task/biz/service"
 	"github.com/crazyfrankie/todolist/app/task/config"
 	"github.com/google/wire"
+	clientv3 "go.etcd.io/etcd/client/v3"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"os"
+	"time"
 )
 
 func InitDB() *gorm.DB {
@@ -38,6 +40,18 @@ func InitDB() *gorm.DB {
 	return db
 }
 
+func InitRegistry() *clientv3.Client {
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{config.GetConf().ETCD.Addr},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return cli
+}
+
 func InitTask() *rpc.Server {
 	wire.Build(
 		InitDB,
@@ -45,6 +59,7 @@ func InitTask() *rpc.Server {
 		repository.NewTaskRepo,
 		service.NewTaskService,
 		server.NewTaskServer,
+		InitRegistry,
 		rpc.NewServer,
 	)
 	return new(rpc.Server)

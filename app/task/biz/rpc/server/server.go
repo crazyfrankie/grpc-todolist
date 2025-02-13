@@ -2,11 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/crazyfrankie/todolist/app/task/biz/repository/dao"
 	"time"
 
 	"google.golang.org/grpc"
 
+	"github.com/crazyfrankie/todolist/app/task/biz/repository/dao"
 	"github.com/crazyfrankie/todolist/app/task/biz/service"
 	"github.com/crazyfrankie/todolist/app/task/rpc_gen/task"
 )

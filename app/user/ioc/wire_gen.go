@@ -14,10 +14,12 @@ import (
 	"github.com/crazyfrankie/todolist/app/user/biz/rpc/server"
 	"github.com/crazyfrankie/todolist/app/user/biz/service"
 	"github.com/crazyfrankie/todolist/app/user/config"
+	"go.etcd.io/etcd/client/v3"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"os"
+	"time"
 )
 
 // Injectors from wire.go:
@@ -28,7 +30,8 @@ func InitUser() *rpc.Server {
 	userRepo := repository.NewUserRepo(userDao)
 	userService := service.NewUserService(userRepo)
 	userServer := server.NewUserServer(userService)
-	rpcServer := rpc.NewServer(userServer)
+	client := InitRegistry()
+	rpcServer := rpc.NewServer(userServer, client)
 	return rpcServer
 }
 
@@ -48,4 +51,16 @@ func InitDB() *gorm.DB {
 	db.AutoMigrate(&dao.User{})
 
 	return db
+}
+
+func InitRegistry() *clientv3.Client {
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{config.GetConf().ETCD.Addr},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return cli
 }

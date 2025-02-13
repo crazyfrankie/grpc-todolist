@@ -3,17 +3,27 @@ package main
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/metadata"
 	"log"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/naming/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/carzyfrankie/app/gateway/mws"
 	"github.com/crazyfrankie/todolist/app/task/rpc_gen/task"
 	"github.com/crazyfrankie/todolist/app/user/rpc_gen/user"
+)
+
+var (
+	userService = "service/user"
+	taskService = "service/task"
+	connMap     sync.Map
 )
 
 func main() {
@@ -27,10 +37,15 @@ func main() {
 		return md
 	}))
 
-	u := initUserClient()
-	t := initTaskClient()
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{"localhost:2379"},
+		DialTimeout: time.Second * 5,
+	})
 
-	err := user.RegisterUserServiceHandlerClient(context.Background(), mux, u)
+	u := initUserClient(cli)
+	t := initTaskClient(cli)
+
+	err = user.RegisterUserServiceHandlerClient(context.Background(), mux, u)
 	if err != nil {
 		panic(err)
 	}
@@ -49,21 +64,81 @@ func main() {
 	}
 }
 
-func initUserClient() user.UserServiceClient {
-	conn, err := grpc.NewClient("localhost:8081",
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(err)
-	}
+func initUserClient(client *clientv3.Client) user.UserServiceClient {
+	cli := user.NewUserServiceClient(getSharedConn(client, userService))
 
-	return user.NewUserServiceClient(conn)
+	go watchServices(client, userService)
+
+	return cli
 }
 
-func initTaskClient() task.TaskServiceClient {
-	conn, err := grpc.NewClient("localhost:8082", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(err)
+func initTaskClient(client *clientv3.Client) task.TaskServiceClient {
+	cli := task.NewTaskServiceClient(getSharedConn(client, taskService))
+
+	go watchServices(client, taskService)
+
+	return cli
+}
+
+func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
+	if conn, ok := connMap.Load(serviceName); ok {
+		return conn.(*grpc.ClientConn)
 	}
 
-	return task.NewTaskServiceClient(conn)
+	resolverBuilder, _ := resolver.NewBuilder(cli)
+	conn, err := grpc.Dial(
+		fmt.Sprintf("etcd:///%s", serviceName),
+		grpc.WithResolvers(resolverBuilder),
+		grpc.WithDefaultServiceConfig(`{"LoadBalancingPolicy":"round_robin"}`),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	connMap.Store(serviceName, conn)
+	return conn
+}
+
+// 监听服务变更
+func watchServices(cli *clientv3.Client, serviceName string) {
+	watchChan := cli.Watch(context.Background(), serviceName, clientv3.WithPrefix())
+
+	localServiceMap := &sync.Map{}
+
+	for {
+		select {
+		case resp := <-watchChan:
+			if resp.Err() != nil {
+				log.Printf("Watch error: %v", resp.Err())
+				continue
+			}
+
+			for _, ev := range resp.Events {
+				key := string(ev.Kv.Key)
+				addr := string(ev.Kv.Value)
+
+				switch ev.Type {
+				case clientv3.EventTypePut:
+					if ev.IsCreate() {
+						log.Printf("New service registered: %s", addr)
+						localServiceMap.Store(key, addr)
+					} else if ev.IsModify() {
+						log.Printf("Service updated: %s", addr)
+						localServiceMap.Store(key, addr)
+					}
+				case clientv3.EventTypeDelete:
+					log.Printf("Service unregistered: %s", addr)
+					localServiceMap.Delete(key)
+				}
+
+				var services []string
+				localServiceMap.Range(func(k, v interface{}) bool {
+					services = append(services, v.(string))
+					return true
+				})
+				log.Printf("Current services: %v", services)
+			}
+		}
+	}
 }

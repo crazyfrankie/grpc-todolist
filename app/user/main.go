@@ -18,4 +18,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = server.ShutDown()
+	if err != nil {
+		panic(err)
+	}
 }
