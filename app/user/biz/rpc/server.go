@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"go.etcd.io/etcd/client/v3/naming/endpoints"
 	"log"
 	"net"
 	"time"
@@ -57,10 +58,10 @@ func (s *Server) ShutDown() error {
 }
 
 func registerServer(cli *clientv3.Client, port string) error {
-	//em, err := endpoints.NewManager(cli, "service/user")
-	//if err != nil {
-	//	return err
-	//}
+	em, err := endpoints.NewManager(cli, "service/user")
+	if err != nil {
+		return err
+	}
 
 	addr := "localhost" + port
 	serviceKey := "service/user/" + addr
@@ -75,8 +76,8 @@ func registerServer(cli *clientv3.Client, port string) error {
 
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	//err = em.AddEndpoint(ctx, serviceKey, endpoints.Endpoint{Addr: addr}, clientv3.WithLease(leaseResp.ID))
-	_, err = cli.Put(ctx, serviceKey, addr, clientv3.WithLease(leaseResp.ID))
+	err = em.AddEndpoint(ctx, serviceKey, endpoints.Endpoint{Addr: addr}, clientv3.WithLease(leaseResp.ID))
+	//_, err = cli.Put(ctx, serviceKey, addr, clientv3.WithLease(leaseResp.ID))
 
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
