@@ -56,9 +56,17 @@ func (d *TaskDao) UpdateTask(ctx context.Context, t *Task) error {
 }
 
 func (d *TaskDao) DeleteTask(ctx context.Context, id int) error {
-	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", id).UpdateColumn("status", 1).Error
+	now := time.Now().Unix()
+	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", id).UpdateColumns(map[string]any{
+		"status": 1,
+		"utime":  now,
+	}).Error
 }
 
 func (d *TaskDao) RestoreTask(ctx context.Context, id int) error {
-	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", id).UpdateColumn("status", 0).Error
+	now := time.Now().Unix()
+	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", id).UpdateColumns(map[string]any{
+		"status": 0,
+		"utime":  now,
+	}).Error
 }
