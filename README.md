@@ -43,6 +43,7 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
 │    ├── wire.go     
 │    └── wire_gen.go // 依赖注入
 ├── main.go          // 入口文件
+├── .env             // 项目启动环境变量
 └── rpc_gen 
      └── task        // grpc 生成代码
 ```
@@ -63,6 +64,7 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
 │    ├── wire.go     
 │    └── wire_gen.go // 依赖注入
 ├── main.go          // 入口文件
+├── .env             // 项目启动环境变量
 └── rpc_gen 
      └── user        // grpc 生成代码
 ```
@@ -71,7 +73,7 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
 项目前端仓库在 https://github.com/crazyfrankie/grpc-todolist-web
 
 # 项目配置文件
-.env: 采用以下格式，且必须放置在 task & user 包下
+`.env` : 采用以下格式，且必须放置在 task & user 包下
 ```
 MYSQL_USER=your_user
 MYSQL_PASSWORD=your_password
@@ -79,7 +81,7 @@ MYSQL_HOST=your_host
 MYSQL_PORT=your_port
 MYSQL_DB=your_db
 ```
-config.yaml: 大致采用以下格式，根据不同模块 `config.go` 的需求进行更改
+`config.yaml` : 大致采用以下格式，根据不同模块 `config.go` 的需求进行更改
 ```
 server:
   addr: "your_addr"
