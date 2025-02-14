@@ -57,11 +57,10 @@ func (t *TaskServer) ListTasks(ctx context.Context, request *task.ListTasksReque
 }
 
 func (t *TaskServer) UpdateTask(ctx context.Context, request *task.UpdateTaskRequest) (*task.UpdateTaskResponse, error) {
-	tk := request.GetTask()
 	err := t.svc.UpdateTask(ctx, &dao.Task{
-		Id:      int(tk.GetId()),
-		Title:   tk.GetTitle(),
-		Content: tk.GetContent(),
+		Id:      int(request.GetId()),
+		Title:   request.GetTitle(),
+		Content: request.GetContent(),
 	})
 	if err != nil {
 		return nil, err
@@ -100,4 +99,13 @@ func (t *TaskServer) RecycleBin(ctx context.Context, req *task.RecycleBinRequest
 	return &task.RecycleBinResponse{
 		Tasks: results,
 	}, nil
+}
+
+func (t *TaskServer) RestoreTask(ctx context.Context, req *task.RestoreTaskRequest) (*task.RestoreTaskResponse, error) {
+	err := t.svc.RestoreTask(ctx, int(req.GetId()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &task.RestoreTaskResponse{}, nil
 }

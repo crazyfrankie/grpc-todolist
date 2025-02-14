@@ -30,7 +30,6 @@ message LoginResponse {
 }
 
 message GetUserInfoRequest {
-  int32 id = 1;
 }
 
 message GetUserInfoResponse {

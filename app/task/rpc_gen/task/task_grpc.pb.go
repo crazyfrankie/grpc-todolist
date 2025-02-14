@@ -19,11 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TaskService_AddTask_FullMethodName    = "/task.TaskService/AddTask"
-	TaskService_ListTasks_FullMethodName  = "/task.TaskService/ListTasks"
-	TaskService_UpdateTask_FullMethodName = "/task.TaskService/UpdateTask"
-	TaskService_DeleteTask_FullMethodName = "/task.TaskService/DeleteTask"
-	TaskService_RecycleBin_FullMethodName = "/task.TaskService/RecycleBin"
+	TaskService_AddTask_FullMethodName     = "/task.TaskService/AddTask"
+	TaskService_ListTasks_FullMethodName   = "/task.TaskService/ListTasks"
+	TaskService_UpdateTask_FullMethodName  = "/task.TaskService/UpdateTask"
+	TaskService_DeleteTask_FullMethodName  = "/task.TaskService/DeleteTask"
+	TaskService_RecycleBin_FullMethodName  = "/task.TaskService/RecycleBin"
+	TaskService_RestoreTask_FullMethodName = "/task.TaskService/RestoreTask"
 )
 
 // TaskServiceClient is the client API for TaskService service.
@@ -35,6 +36,7 @@ type TaskServiceClient interface {
 	UpdateTask(ctx context.Context, in *UpdateTaskRequest, opts ...grpc.CallOption) (*UpdateTaskResponse, error)
 	DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*DeleteTaskResponse, error)
 	RecycleBin(ctx context.Context, in *RecycleBinRequest, opts ...grpc.CallOption) (*RecycleBinResponse, error)
+	RestoreTask(ctx context.Context, in *RestoreTaskRequest, opts ...grpc.CallOption) (*RestoreTaskResponse, error)
 }
 
 type taskServiceClient struct {
@@ -95,6 +97,16 @@ func (c *taskServiceClient) RecycleBin(ctx context.Context, in *RecycleBinReques
 	return out, nil
 }
 
+func (c *taskServiceClient) RestoreTask(ctx context.Context, in *RestoreTaskRequest, opts ...grpc.CallOption) (*RestoreTaskResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreTaskResponse)
+	err := c.cc.Invoke(ctx, TaskService_RestoreTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskServiceServer is the server API for TaskService service.
 // All implementations must embed UnimplementedTaskServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type TaskServiceServer interface {
 	UpdateTask(context.Context, *UpdateTaskRequest) (*UpdateTaskResponse, error)
 	DeleteTask(context.Context, *DeleteTaskRequest) (*DeleteTaskResponse, error)
 	RecycleBin(context.Context, *RecycleBinRequest) (*RecycleBinResponse, error)
+	RestoreTask(context.Context, *RestoreTaskRequest) (*RestoreTaskResponse, error)
 	mustEmbedUnimplementedTaskServiceServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedTaskServiceServer) DeleteTask(context.Context, *DeleteTaskReq
 }
 func (UnimplementedTaskServiceServer) RecycleBin(context.Context, *RecycleBinRequest) (*RecycleBinResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RecycleBin not implemented")
+}
+func (UnimplementedTaskServiceServer) RestoreTask(context.Context, *RestoreTaskRequest) (*RestoreTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreTask not implemented")
 }
 func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
 func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
@@ -240,6 +256,24 @@ func _TaskService_RecycleBin_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskService_RestoreTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).RestoreTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_RestoreTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).RestoreTask(ctx, req.(*RestoreTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var TaskService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecycleBin",
 			Handler:    _TaskService_RecycleBin_Handler,
+		},
+		{
+			MethodName: "RestoreTask",
+			Handler:    _TaskService_RestoreTask_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

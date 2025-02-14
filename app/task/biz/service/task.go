@@ -62,3 +62,7 @@ func (s *TaskService) RecycleBin(ctx context.Context) ([]*dao.Task, error) {
 	uId, _ := strconv.Atoi(userId)
 	return s.repo.FindByUid(ctx, uId, 1)
 }
+
+func (s *TaskService) RestoreTask(ctx context.Context, id int) error {
+	return s.repo.RestoreTask(ctx, id)
+}

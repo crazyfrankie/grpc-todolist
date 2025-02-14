@@ -57,13 +57,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	//handler := mws.CORS(mws.NewAuthBuilder().
+	//	IgnorePath("/api/user/login").
+	//	IgnorePath("/api/user/register").
+	//	Auth(mux))
 	handler := mws.NewAuthBuilder().
 		IgnorePath("/api/user/login").
 		IgnorePath("/api/user/register").
 		Auth(mux)
-
 	server := &http.Server{
-		Addr:    "localhost:9091",
+		Addr:    "0.0.0.0:9091",
 		Handler: handler,
 	}
 

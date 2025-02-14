@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
+	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/crazyfrankie/todolist/app/user/biz/repository"
 	"github.com/crazyfrankie/todolist/app/user/biz/repository/dao"
@@ -62,6 +65,13 @@ func (s *UserService) Login(ctx context.Context, name, password string) (string,
 	return token, nil
 }
 
-func (s *UserService) GetUserInfo(ctx context.Context, id int) (dao.User, error) {
-	return s.repo.FindById(ctx, id)
+func (s *UserService) GetUserInfo(ctx context.Context) (dao.User, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return dao.User{}, errors.New("error param")
+	}
+	userId := md["user_id"][0]
+	uId, _ := strconv.Atoi(userId)
+
+	return s.repo.FindById(ctx, uId)
 }

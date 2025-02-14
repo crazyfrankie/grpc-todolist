@@ -31,7 +31,9 @@ message ListTasksResponse {
 }
 
 message UpdateTaskRequest {
-  Task task = 1;
+  int32 id = 1;
+  string content = 2;
+  string title = 3;
 }
 
 message UpdateTaskResponse {
@@ -51,6 +53,14 @@ message RecycleBinRequest {
 
 message RecycleBinResponse {
   repeated Task tasks = 1;
+}
+
+message RestoreTaskRequest {
+  int32 id = 1;
+}
+
+message RestoreTaskResponse {
+
 }
 
 service TaskService {
@@ -80,6 +90,12 @@ service TaskService {
   rpc RecycleBin(RecycleBinRequest) returns (RecycleBinResponse) {
     option (google.api.http) = {
       get: "/api/tasks/recycle"
+    };
+  }
+  rpc RestoreTask(RestoreTaskRequest) returns (RestoreTaskResponse) {
+    option (google.api.http) = {
+      post: "/api/tasks/restore"
+      body: "*"
     };
   }
 }

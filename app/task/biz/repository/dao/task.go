@@ -33,16 +33,6 @@ func (d *TaskDao) Create(ctx context.Context, t *Task) error {
 	return d.db.WithContext(ctx).Create(t).Error
 }
 
-func (d *TaskDao) FindById(ctx context.Context, id int) (Task, error) {
-	var t Task
-	err := d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", id).Find(&t).Error
-	if err != nil {
-		return Task{}, err
-	}
-
-	return t, nil
-}
-
 func (d *TaskDao) FindByUid(ctx context.Context, uid, status int) ([]*Task, error) {
 	var tasks []*Task
 	err := d.db.WithContext(ctx).Model(&Task{}).Where("user_id = ? AND status = ?", uid, status).Order("utime DESC").Find(&tasks).Error
@@ -54,9 +44,21 @@ func (d *TaskDao) FindByUid(ctx context.Context, uid, status int) ([]*Task, erro
 }
 
 func (d *TaskDao) UpdateTask(ctx context.Context, t *Task) error {
-	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", t.Id).Updates(t).Error
+	updates := make(map[string]any)
+	if t.Title != "" {
+		updates["title"] = t.Title
+	}
+	if t.Content != "" {
+		updates["content"] = t.Content
+	}
+
+	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", t.Id).Updates(updates).Error
 }
 
 func (d *TaskDao) DeleteTask(ctx context.Context, id int) error {
 	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", id).UpdateColumn("status", 1).Error
+}
+
+func (d *TaskDao) RestoreTask(ctx context.Context, id int) error {
+	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", id).UpdateColumn("status", 0).Error
 }
