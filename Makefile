@@ -17,3 +17,15 @@ gen-task-main:
 .PHONY: gen-gateway-main
 gen-gateway-main:
 	@cd ./app/gateway/api && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
+
+.PHONY: run-user
+run-user:
+	@cd ./app/user && go run main.go
+
+.PHONY: run-task
+run-task:
+	@cd ./app/task && go run main.go
+
+.PHONY: run-api
+run-api:
+	@cd ./app/gateway && go run main.go

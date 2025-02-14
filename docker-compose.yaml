@@ -1,0 +1,12 @@
+services:
+  etcd:
+    image: 'bitnami/kafka:latest'
+    ports:
+      - '2379:2379'
+
+  mysql:
+    image: 'mysql:latest'
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: your_password
