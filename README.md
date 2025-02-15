@@ -33,8 +33,8 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
 . task
 ├── biz
 │    ├── repository  // 数据访问层
-│    ├── rpc         // rpc 调用
 │    └── service     // 业务逻辑
+│── rpc              // rpc 调用
 ├── config
 │    ├── config.go   // 配置读取入口
 │    └── test        // test 环境下的配置文件
@@ -54,8 +54,8 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
 . user
 ├── biz
 │    ├── repository  // 数据访问层
-│    ├── rpc         // rpc 调用
 │    └── service     // 业务逻辑
+│── rpc              // rpc 调用
 ├── config
 │    ├── config.go   // 配置读取入口
 │    └── test        // test 环境下的配置文件
