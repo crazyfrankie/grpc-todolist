@@ -4,7 +4,9 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
 
 ***
 # 项目结构
-1. grpc-todolist 项目概览
+1. 架构图
+![image](https://github.com/user-attachments/assets/3b483955-f762-419f-9cb3-a2fc9bc6a72a)
+2. grpc-todolist 项目目录
 ```
 . grpc-todolist
 ├── app            // 各个微服务
@@ -15,7 +17,7 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
      ├── google    // grpc-gateway idl
      └── todolist  // protoc 接口定义
 ```
-2. gateway 模块
+3. gateway 模块
 ```
 . gateway
 ├── api 
@@ -26,7 +28,7 @@ grpc + grpc-gateway + GORM + MySQL 实现的简易备忘录
     ├── cors.go   // 跨域中间件 
     └── jwt.go    // jwt 中间件
 ```
-3. task 模块
+4. task 模块
 ```
 . task
 ├── biz
