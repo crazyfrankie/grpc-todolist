@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"github.com/crazyfrankie/todolist/app/user/biz/repository"
 	"github.com/crazyfrankie/todolist/app/user/biz/repository/dao"
-	"github.com/crazyfrankie/todolist/app/user/biz/rpc/server"
 	"github.com/crazyfrankie/todolist/app/user/biz/service"
 	"github.com/crazyfrankie/todolist/app/user/config"
+	"github.com/crazyfrankie/todolist/app/user/rpc"
+	"github.com/crazyfrankie/todolist/app/user/rpc/server"
 	"github.com/google/wire"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"gorm.io/driver/mysql"
@@ -16,8 +17,6 @@ import (
 	"gorm.io/gorm/schema"
 	"os"
 	"time"
-
-	"github.com/crazyfrankie/todolist/app/user/biz/rpc"
 )
 
 func InitDB() *gorm.DB {

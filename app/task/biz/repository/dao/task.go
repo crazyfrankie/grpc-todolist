@@ -52,6 +52,10 @@ func (d *TaskDao) UpdateTask(ctx context.Context, t *Task) error {
 		updates["content"] = t.Content
 	}
 
+	if len(updates) > 0 {
+		updates["utime"] = time.Now().Unix()
+	}
+
 	return d.db.WithContext(ctx).Model(&Task{}).Where("id = ?", t.Id).Updates(updates).Error
 }
 
