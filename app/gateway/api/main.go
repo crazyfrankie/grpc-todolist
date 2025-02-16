@@ -57,6 +57,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// 单机部署不需要处理跨域
 	//handler := mws.CORS(mws.NewAuthBuilder().
 	//	IgnorePath("/api/user/login").
 	//	IgnorePath("/api/user/register").
@@ -114,11 +116,20 @@ func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
 		return conn.(*grpc.ClientConn)
 	}
 
+	svcCfg := `
+	{
+		"loadBalancingConfig": [
+			{
+				"round_robin": {}
+			}
+		]
+	}`
+
 	resolverBuilder, _ := resolver.NewBuilder(cli)
 	conn, err := grpc.Dial(
 		fmt.Sprintf("etcd:///%s", serviceName),
 		grpc.WithResolvers(resolverBuilder),
-		grpc.WithDefaultServiceConfig(`{"LoadBalancingPolicy":"round_robin"}`),
+		grpc.WithDefaultServiceConfig(svcCfg),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
