@@ -12,9 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/resolver"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -98,20 +100,21 @@ func main() {
 func initUserClient(client *clientv3.Client) user.UserServiceClient {
 	cli := user.NewUserServiceClient(getSharedConn(client, userService))
 
-	//go watchServices(client, userService)
-
 	return cli
 }
 
 func initTaskClient(client *clientv3.Client) task.TaskServiceClient {
 	cli := task.NewTaskServiceClient(getSharedConn(client, taskService))
 
-	//go watchServices(client, taskService)
-
 	return cli
 }
 
 func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+
 	if conn, ok := connMap.Load(serviceName); ok {
 		return conn.(*grpc.ClientConn)
 	}
@@ -131,6 +134,8 @@ func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
 		grpc.WithResolvers(resolverBuilder),
 		grpc.WithDefaultServiceConfig(svcCfg),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainUnaryInterceptor(
+			logging.UnaryClientInterceptor(initInterceptor(logger))),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -140,45 +145,39 @@ func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
 	return conn
 }
 
-// 监听服务变更
-//func watchServices(cli *clientv3.Client, serviceName string) {
-//	watchChan := cli.Watch(context.Background(), serviceName, clientv3.WithPrefix())
-//
-//	localServiceMap := &sync.Map{}
-//
-//	for {
-//		select {
-//		case resp := <-watchChan:
-//			if resp.Err() != nil {
-//				log.Printf("Watch error: %v", resp.Err())
-//				continue
-//			}
-//
-//			for _, ev := range resp.Events {
-//				key := string(ev.Kv.Key)
-//				addr := string(ev.Kv.Value)
-//
-//				switch ev.Type {
-//				case clientv3.EventTypePut:
-//					if ev.IsCreate() {
-//						log.Printf("New service registered: %s", addr)
-//						localServiceMap.Store(key, addr)
-//					} else if ev.IsModify() {
-//						log.Printf("Service updated: %s", addr)
-//						localServiceMap.Store(key, addr)
-//					}
-//				case clientv3.EventTypeDelete:
-//					log.Printf("Service unregistered: %s", addr)
-//					localServiceMap.Delete(key)
-//				}
-//
-//				var services []string
-//				localServiceMap.Range(func(k, v interface{}) bool {
-//					services = append(services, v.(string))
-//					return true
-//				})
-//				log.Printf("Current services: %v", services)
-//			}
-//		}
-//	}
-//}
+func initInterceptor(l *zap.Logger) logging.Logger {
+	return logging.LoggerFunc(func(ctx context.Context, level logging.Level, msg string, fields ...any) {
+		f := make([]zap.Field, 0, len(fields))
+
+		for i := 0; i < len(fields); i += 2 {
+			key := fields[i]
+			value := fields[i+1]
+
+			switch v := value.(type) {
+			case string:
+				f = append(f, zap.String(key.(string), v))
+			case int:
+				f = append(f, zap.Int(key.(string), v))
+			case bool:
+				f = append(f, zap.Bool(key.(string), v))
+			default:
+				f = append(f, zap.Any(key.(string), v))
+			}
+		}
+
+		logger := l.WithOptions(zap.AddCallerSkip(1)).With(f...)
+
+		switch level {
+		case logging.LevelDebug:
+			logger.Debug(msg)
+		case logging.LevelInfo:
+			logger.Info(msg)
+		case logging.LevelWarn:
+			logger.Warn(msg)
+		case logging.LevelError:
+			logger.Error(msg)
+		default:
+			panic(fmt.Sprintf("unknown level %v", level))
+		}
+	})
+}

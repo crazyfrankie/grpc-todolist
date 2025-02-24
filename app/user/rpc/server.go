@@ -3,13 +3,15 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/crazyfrankie/todolist/app/user/rpc/server"
-	"go.etcd.io/etcd/client/v3/naming/endpoints"
+	"go.uber.org/zap"
 	"log"
 	"net"
 	"time"
 
+	"github.com/crazyfrankie/todolist/app/user/rpc/server"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/naming/endpoints"
 	"google.golang.org/grpc"
 
 	"github.com/crazyfrankie/todolist/app/user/config"
@@ -22,7 +24,14 @@ type Server struct {
 }
 
 func NewServer(u *server.UserServer, client *clientv3.Client) *Server {
-	s := grpc.NewServer()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+
+	s := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		logging.UnaryServerInterceptor(initInterceptor(logger))),
+	)
 	u.RegisterServer(s)
 
 	return &Server{
@@ -77,7 +86,6 @@ func registerServer(cli *clientv3.Client, port string) error {
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	err = em.AddEndpoint(ctx, serviceKey, endpoints.Endpoint{Addr: addr}, clientv3.WithLease(leaseResp.ID))
-	//_, err = cli.Put(ctx, serviceKey, addr, clientv3.WithLease(leaseResp.ID))
 
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -103,4 +111,41 @@ func registerServer(cli *clientv3.Client, port string) error {
 	}()
 
 	return err
+}
+
+func initInterceptor(l *zap.Logger) logging.Logger {
+	return logging.LoggerFunc(func(ctx context.Context, level logging.Level, msg string, fields ...any) {
+		f := make([]zap.Field, 0, len(fields))
+
+		for i := 0; i < len(fields); i += 2 {
+			key := fields[i]
+			value := fields[i+1]
+
+			switch v := value.(type) {
+			case string:
+				f = append(f, zap.String(key.(string), v))
+			case int:
+				f = append(f, zap.Int(key.(string), v))
+			case bool:
+				f = append(f, zap.Bool(key.(string), v))
+			default:
+				f = append(f, zap.Any(key.(string), v))
+			}
+		}
+
+		logger := l.WithOptions(zap.AddCallerSkip(1)).With(f...)
+
+		switch level {
+		case logging.LevelDebug:
+			logger.Debug(msg)
+		case logging.LevelInfo:
+			logger.Info(msg)
+		case logging.LevelWarn:
+			logger.Warn(msg)
+		case logging.LevelError:
+			logger.Error(msg)
+		default:
+			panic(fmt.Sprintf("unknown level %v", level))
+		}
+	})
 }

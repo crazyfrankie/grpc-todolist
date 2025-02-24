@@ -3,13 +3,15 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/crazyfrankie/todolist/app/task/rpc/server"
-	"go.etcd.io/etcd/client/v3/naming/endpoints"
 	"log"
 	"net"
 	"time"
 
+	"github.com/crazyfrankie/todolist/app/task/rpc/server"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/naming/endpoints"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	"github.com/crazyfrankie/todolist/app/task/config"
@@ -22,7 +24,14 @@ type Server struct {
 }
 
 func NewServer(t *server.TaskServer, client *clientv3.Client) *Server {
-	s := grpc.NewServer()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+
+	s := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		logging.UnaryServerInterceptor(initInterceptor(logger))),
+	)
 	t.RegisterServer(s)
 
 	return &Server{
@@ -103,4 +112,41 @@ func registerServer(cli *clientv3.Client, port string) error {
 	}()
 
 	return nil
+}
+
+func initInterceptor(l *zap.Logger) logging.Logger {
+	return logging.LoggerFunc(func(ctx context.Context, level logging.Level, msg string, fields ...any) {
+		f := make([]zap.Field, 0, len(fields))
+
+		for i := 0; i < len(fields); i += 2 {
+			key := fields[i]
+			value := fields[i+1]
+
+			switch v := value.(type) {
+			case string:
+				f = append(f, zap.String(key.(string), v))
+			case bool:
+				f = append(f, zap.Bool(key.(string), v))
+			case int:
+				f = append(f, zap.Int(key.(string), v))
+			default:
+				f = append(f, zap.Any(key.(string), v))
+			}
+		}
+
+		logger := l.WithOptions(zap.AddCallerSkip(1)).With(f...)
+
+		switch level {
+		case logging.LevelInfo:
+			logger.Info(msg)
+		case logging.LevelDebug:
+			logger.Debug(msg)
+		case logging.LevelError:
+			logger.Error(msg)
+		case logging.LevelWarn:
+			logger.Warn(msg)
+		default:
+			panic(fmt.Sprintf("unknown level %v", level))
+		}
+	})
 }
