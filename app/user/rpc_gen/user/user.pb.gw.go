@@ -87,16 +87,7 @@ func request_UserService_GetUserInfo_0(ctx context.Context, marshaler runtime.Ma
 	var (
 		protoReq GetUserInfoRequest
 		metadata runtime.ServerMetadata
-		err      error
 	)
-	val, ok := pathParams["user_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "user_id")
-	}
-	protoReq.UserId, err = runtime.Int32(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "user_id", err)
-	}
 	msg, err := client.GetUserInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
@@ -105,16 +96,7 @@ func local_request_UserService_GetUserInfo_0(ctx context.Context, marshaler runt
 	var (
 		protoReq GetUserInfoRequest
 		metadata runtime.ServerMetadata
-		err      error
 	)
-	val, ok := pathParams["user_id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "user_id")
-	}
-	protoReq.UserId, err = runtime.Int32(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "user_id", err)
-	}
 	msg, err := server.GetUserInfo(ctx, &protoReq)
 	return msg, metadata, err
 }
@@ -171,7 +153,7 @@ func RegisterUserServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.UserService/GetUserInfo", runtime.WithHTTPPathPattern("/api/user/{user_id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.UserService/GetUserInfo", runtime.WithHTTPPathPattern("/api/user"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -263,7 +245,7 @@ func RegisterUserServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/user.UserService/GetUserInfo", runtime.WithHTTPPathPattern("/api/user/{user_id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/user.UserService/GetUserInfo", runtime.WithHTTPPathPattern("/api/user"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -282,7 +264,7 @@ func RegisterUserServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 var (
 	pattern_UserService_Register_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "user", "register"}, ""))
 	pattern_UserService_Login_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "user", "login"}, ""))
-	pattern_UserService_GetUserInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"api", "user", "user_id"}, ""))
+	pattern_UserService_GetUserInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"api", "user"}, ""))
 )
 
 var (

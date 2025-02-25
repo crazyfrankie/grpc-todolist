@@ -77,7 +77,7 @@ func (s *UserService) Login(ctx context.Context, name, password string) (string,
 	return token, nil
 }
 
-func (s *UserService) GetUserInfo(ctx context.Context, uid int) (dao.User, error) {
+func (s *UserService) GetUserInfo(ctx context.Context) (dao.User, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return dao.User{}, errors.New("error param")
@@ -85,9 +85,5 @@ func (s *UserService) GetUserInfo(ctx context.Context, uid int) (dao.User, error
 	userId := md["user_id"][0]
 	uId, _ := strconv.Atoi(userId)
 
-	if uId != uid {
-		return dao.User{}, nil
-	}
-
-	return s.repo.FindById(ctx, uid)
+	return s.repo.FindById(ctx, uId)
 }

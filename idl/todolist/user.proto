@@ -30,7 +30,6 @@ message LoginResponse {
 }
 
 message GetUserInfoRequest {
-  int32 user_id = 1;
 }
 
 message GetUserInfoResponse {
@@ -54,7 +53,7 @@ service UserService {
 
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
     option (google.api.http) = {
-      get: "/api/user/{user_id}"
+      get: "/api/user"
     };
   }
 }

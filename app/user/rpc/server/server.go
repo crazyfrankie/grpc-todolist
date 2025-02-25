@@ -45,7 +45,7 @@ func (s *UserServer) Login(ctx context.Context, request *user.LoginRequest) (*us
 }
 
 func (s *UserServer) GetUserInfo(ctx context.Context, request *user.GetUserInfoRequest) (*user.GetUserInfoResponse, error) {
-	u, err := s.svc.GetUserInfo(ctx, int(request.GetUserId()))
+	u, err := s.svc.GetUserInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
