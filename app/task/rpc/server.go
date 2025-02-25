@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/crazyfrankie/todolist/app/task/rpc/server"
+	"github.com/crazyfrankie/framework-plugin/grpcx/interceptor/circuitbreaker"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/endpoints"
@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/crazyfrankie/todolist/app/task/config"
+	"github.com/crazyfrankie/todolist/app/task/rpc/server"
 )
 
 type Server struct {
@@ -52,6 +53,7 @@ func NewServer(t *server.TaskServer, client *clientv3.Client) *Server {
 	s := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
+			circuitbreaker.NewInterceptorBuilder().Build(),
 			logging.UnaryServerInterceptor(initInterceptor(logger), logging.WithFieldsFromContext(logTraceID))),
 	)
 	t.RegisterServer(s)
