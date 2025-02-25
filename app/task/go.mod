@@ -3,7 +3,7 @@ module github.com/crazyfrankie/todolist/app/task
 go 1.23.4
 
 require (
-	github.com/crazyfrankie/framework-plugin v0.0.6
+	github.com/crazyfrankie/framework-plugin v0.0.7
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/google/wire v0.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.0

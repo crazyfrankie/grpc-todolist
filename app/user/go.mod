@@ -3,7 +3,7 @@ module github.com/crazyfrankie/todolist/app/user
 go 1.23.4
 
 require (
-	github.com/crazyfrankie/framework-plugin v0.0.6
+	github.com/crazyfrankie/framework-plugin v0.0.7
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/wire v0.6.0

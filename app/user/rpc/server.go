@@ -54,9 +54,8 @@ func NewServer(u *server.UserServer, client *clientv3.Client) *Server {
 	s := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
-			circuitbreaker.NewInterceptorBuilder().Build(),
-			logging.UnaryServerInterceptor(initInterceptor(logger), logging.WithFieldsFromContext(logTraceID))),
-
+			logging.UnaryServerInterceptor(initInterceptor(logger), logging.WithFieldsFromContext(logTraceID)),
+			circuitbreaker.NewInterceptorBuilder().Build()),
 	)
 	u.RegisterServer(s)
 
