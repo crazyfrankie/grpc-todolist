@@ -19,15 +19,14 @@ func NewTaskService(repo *repository.TaskRepo) *TaskService {
 	return &TaskService{repo: repo}
 }
 
-func (s *TaskService) AddTask(ctx context.Context, title, content string) error {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return errors.New("error param")
+func (s *TaskService) AddTask(ctx context.Context, title, content string, uid int) error {
+	err := s.UserAuth(ctx, uid)
+	if err != nil {
+		return err
 	}
-	userId := md["user_id"][0]
-	uId, _ := strconv.Atoi(userId)
+
 	task := &dao.Task{
-		UserId:  uId,
+		UserId:  uid,
 		Title:   title,
 		Content: content,
 	}
@@ -35,34 +34,57 @@ func (s *TaskService) AddTask(ctx context.Context, title, content string) error 
 	return s.repo.CreateTask(ctx, task)
 }
 
-func (s *TaskService) List(ctx context.Context) ([]*dao.Task, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return []*dao.Task{}, errors.New("error param")
+func (s *TaskService) List(ctx context.Context, uid int) ([]*dao.Task, error) {
+	err := s.UserAuth(ctx, uid)
+	if err != nil {
+		return nil, err
 	}
-	userId := md["user_id"][0]
-	uId, _ := strconv.Atoi(userId)
-	return s.repo.FindByUid(ctx, uId, 0)
+	return s.repo.FindByUid(ctx, uid, 0)
 }
 
-func (s *TaskService) UpdateTask(ctx context.Context, t *dao.Task) error {
+func (s *TaskService) UpdateTask(ctx context.Context, t *dao.Task, uid int) error {
+	err := s.UserAuth(ctx, uid)
+	if err != nil {
+		return err
+	}
 	return s.repo.UpdateTask(ctx, t)
 }
 
-func (s *TaskService) DeleteTask(ctx context.Context, id int) error {
+func (s *TaskService) DeleteTask(ctx context.Context, id, uid int) error {
+	err := s.UserAuth(ctx, uid)
+	if err != nil {
+		return err
+	}
 	return s.repo.DeleteTask(ctx, id)
 }
 
-func (s *TaskService) RecycleBin(ctx context.Context) ([]*dao.Task, error) {
+func (s *TaskService) RecycleBin(ctx context.Context, uid int) ([]*dao.Task, error) {
+	err := s.UserAuth(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.FindByUid(ctx, uid, 1)
+}
+
+func (s *TaskService) RestoreTask(ctx context.Context, id, uid int) error {
+	err := s.UserAuth(ctx, uid)
+	if err != nil {
+		return err
+	}
+	return s.repo.RestoreTask(ctx, id)
+}
+
+func (s *TaskService) UserAuth(ctx context.Context, uid int) error {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return []*dao.Task{}, errors.New("error param")
+		return errors.New("error param")
 	}
 	userId := md["user_id"][0]
 	uId, _ := strconv.Atoi(userId)
-	return s.repo.FindByUid(ctx, uId, 1)
-}
 
-func (s *TaskService) RestoreTask(ctx context.Context, id int) error {
-	return s.repo.RestoreTask(ctx, id)
+	if uId != uid {
+		return errors.New("UnAuthorized")
+	}
+
+	return nil
 }
