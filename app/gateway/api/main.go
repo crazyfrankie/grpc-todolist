@@ -47,6 +47,7 @@ func main() {
 		if userID, ok := request.Context().Value("user_id").(string); ok {
 			md.Set("user_id", userID)
 		}
+		md.Set("user_agent", request.Header.Get("User-Agent"))
 
 		return md
 	}))

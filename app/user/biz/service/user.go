@@ -21,6 +21,12 @@ func NewUserService(r *repository.UserRepo) *UserService {
 }
 
 func (s *UserService) Register(ctx context.Context, name, password string) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", errors.New("error param")
+	}
+	userAgent := md["user_agent"][0]
+
 	ps, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -37,7 +43,7 @@ func (s *UserService) Register(ctx context.Context, name, password string) (stri
 	}
 
 	var token string
-	token, err = GenerateToken(u.Id)
+	token, err = GenerateToken(u.Id, userAgent)
 	if err != nil {
 		return "", err
 	}
@@ -46,6 +52,12 @@ func (s *UserService) Register(ctx context.Context, name, password string) (stri
 }
 
 func (s *UserService) Login(ctx context.Context, name, password string) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", errors.New("error param")
+	}
+	userAgent := md["user_agent"][0]
+
 	u, err := s.repo.FindByName(ctx, name)
 	if err != nil {
 		return "", err
@@ -57,7 +69,7 @@ func (s *UserService) Login(ctx context.Context, name, password string) (string,
 	}
 
 	var token string
-	token, err = GenerateToken(u.Id)
+	token, err = GenerateToken(u.Id, userAgent)
 	if err != nil {
 		return "", err
 	}

@@ -44,6 +44,13 @@ func (a *AuthBuild) Auth(next http.Handler) http.HandlerFunc {
 			return
 		}
 
+		// 严重的安全问题
+		if claims["user_agent"] != r.UserAgent() {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("Unauthorized"))
+			return
+		}
+
 		userId := claims["user_id"].(float64)
 		uid := strconv.FormatFloat(userId, 'f', 0, 64)
 		r = r.WithContext(context.WithValue(r.Context(), "user_id", uid))
