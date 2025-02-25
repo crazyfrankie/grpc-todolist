@@ -78,7 +78,7 @@ func main() {
 		IgnorePath("/api/user/register").
 		Auth(mux)
 	server := &http.Server{
-		Addr:    "0.0.0.0:9091",
+		Addr:    "127.0.0.1:9091",
 		Handler: handler,
 	}
 
