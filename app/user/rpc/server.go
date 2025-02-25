@@ -139,7 +139,7 @@ func registerServer(cli *clientv3.Client, port string) error {
 
 func initInterceptor(l *zap.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, level logging.Level, msg string, fields ...any) {
-		f := make([]zap.Field, 0, len(fields))
+		f := make([]zap.Field, 0, len(fields)/2)
 
 		for i := 0; i < len(fields); i += 2 {
 			key := fields[i]
