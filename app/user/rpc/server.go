@@ -102,7 +102,7 @@ func registerServer(cli *clientv3.Client, port string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	leaseResp, err := cli.Grant(ctx, 60)
+	leaseResp, err := cli.Grant(ctx, 180)
 	if err != nil {
 		log.Fatalf("failed to grant lease: %v", err)
 	}

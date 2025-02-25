@@ -118,7 +118,9 @@ func initTaskClient(client *clientv3.Client) task.TaskServiceClient {
 }
 
 func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
-	logger, err := zap.NewProduction()
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	logger, err := config.Build()
 	if err != nil {
 		panic(err)
 	}
@@ -169,7 +171,7 @@ func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
 
 func initInterceptor(l *zap.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, level logging.Level, msg string, fields ...any) {
-		f := make([]zap.Field, 0, len(fields))
+		f := make([]zap.Field, 0, len(fields)/2)
 
 		for i := 0; i < len(fields); i += 2 {
 			key := fields[i]

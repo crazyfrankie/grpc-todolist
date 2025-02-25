@@ -100,7 +100,7 @@ func registerServer(cli *clientv3.Client, port string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	leaseResp, err := cli.Grant(ctx, 60)
+	leaseResp, err := cli.Grant(ctx, 180)
 	if err != nil {
 		log.Fatalf("failed to grant lease: %v", err)
 	}
@@ -138,7 +138,7 @@ func registerServer(cli *clientv3.Client, port string) error {
 
 func initInterceptor(l *zap.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, level logging.Level, msg string, fields ...any) {
-		f := make([]zap.Field, 0, len(fields))
+		f := make([]zap.Field, 0, len(fields)/2)
 
 		for i := 0; i < len(fields); i += 2 {
 			key := fields[i]
