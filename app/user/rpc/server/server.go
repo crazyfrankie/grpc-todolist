@@ -26,25 +26,37 @@ func (s *UserServer) RegisterServer(server *grpc.Server) {
 func (s *UserServer) Register(ctx context.Context, request *user.RegisterRequest) (*user.RegisterResponse, error) {
 	token, err := s.svc.Register(ctx, request.GetName(), request.GetPassword())
 	if err != nil {
-		return nil, err
+		return &user.RegisterResponse{
+			Code: 200,
+			Msg:  "ok",
+		}, err
 	}
 
 	header := metadata.Pairs("Set-Auth-Token", token)
 	grpc.SendHeader(ctx, header)
 
-	return &user.RegisterResponse{}, nil
+	return &user.RegisterResponse{
+		Code: 200,
+		Msg:  "ok",
+	}, nil
 }
 
 func (s *UserServer) Login(ctx context.Context, request *user.LoginRequest) (*user.LoginResponse, error) {
 	token, err := s.svc.Login(ctx, request.GetName(), request.GetPassword())
 	if err != nil {
-		return nil, err
+		return &user.LoginResponse{
+			Code: 500,
+			Msg:  "internal error",
+		}, err
 	}
 
 	header := metadata.Pairs("Set-Auth-Token", token)
 	grpc.SendHeader(ctx, header)
 
-	return &user.LoginResponse{}, nil
+	return &user.LoginResponse{
+		Code: 200,
+		Msg:  "ok",
+	}, nil
 }
 
 func (s *UserServer) GetUserInfo(ctx context.Context, request *user.GetUserInfoRequest) (*user.GetUserInfoResponse, error) {
