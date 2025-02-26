@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"google.golang.org/grpc/metadata"
 
 	"google.golang.org/grpc"
 
@@ -28,9 +29,10 @@ func (s *UserServer) Register(ctx context.Context, request *user.RegisterRequest
 		return nil, err
 	}
 
-	return &user.RegisterResponse{
-		Token: token,
-	}, nil
+	header := metadata.Pairs("Set-Auth-Token", token)
+	grpc.SendHeader(ctx, header)
+
+	return &user.RegisterResponse{}, nil
 }
 
 func (s *UserServer) Login(ctx context.Context, request *user.LoginRequest) (*user.LoginResponse, error) {
@@ -39,9 +41,10 @@ func (s *UserServer) Login(ctx context.Context, request *user.LoginRequest) (*us
 		return nil, err
 	}
 
-	return &user.LoginResponse{
-		Token: token,
-	}, nil
+	header := metadata.Pairs("Set-Auth-Token", token)
+	grpc.SendHeader(ctx, header)
+
+	return &user.LoginResponse{}, nil
 }
 
 func (s *UserServer) GetUserInfo(ctx context.Context, request *user.GetUserInfoRequest) (*user.GetUserInfoResponse, error) {

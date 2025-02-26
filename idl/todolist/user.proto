@@ -17,7 +17,6 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-  string token = 1;
 }
 
 message LoginRequest {
@@ -26,7 +25,6 @@ message LoginRequest {
 }
 
 message LoginResponse {
-  string token = 1;
 }
 
 message GetUserInfoRequest {

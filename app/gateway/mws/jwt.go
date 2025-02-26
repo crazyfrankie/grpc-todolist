@@ -34,8 +34,19 @@ func (a *AuthBuild) Auth(next http.Handler) http.HandlerFunc {
 			return
 		}
 
-		tokenHeader := r.Header.Get("Authorization")
-		token := extractToken(tokenHeader)
+		cookie, err := r.Cookie("todolist_auth")
+		if !cookie.HttpOnly || !cookie.Secure {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		var token string
+		if err == nil {
+			token = cookie.Value
+		} else {
+			tokenHeader := r.Header.Get("Authorization")
+			token = extractToken(tokenHeader)
+		}
 
 		claims, err := parseToken(token)
 		if err != nil {
@@ -86,4 +97,16 @@ func parseToken(token string) (jwt.MapClaims, error) {
 	}
 
 	return nil, errors.New("token is invalid")
+}
+
+func setAuthCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "todolist_auth",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   86400, // 24小时
+	})
 }

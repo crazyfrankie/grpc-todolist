@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"net/http"
 	"os"
@@ -50,7 +51,34 @@ func main() {
 		md.Set("user_agent", request.Header.Get("User-Agent"))
 
 		return md
-	}))
+	}),
+		// OutgoingHeaderMatcher 是 grpc gateway 内部进行 metadata 转换到 http 头部的匹配器
+		// 传入特定实现可以跳过某些字段不使用 grpc 的设置
+		runtime.WithOutgoingHeaderMatcher(func(key string) (string, bool) {
+			if key == "Set-Auth-Token" {
+				return "", false
+			}
+			return runtime.DefaultHeaderMatcher(key)
+		}),
+		runtime.WithForwardResponseOption(func(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
+			md, ok := runtime.ServerMetadataFromContext(ctx)
+			if !ok {
+				return nil
+			}
+
+			if tokens := md.HeaderMD.Get("Set-Auth-Token"); len(tokens) > 0 {
+				http.SetCookie(w, &http.Cookie{
+					Name:     "todolist_auth",
+					Value:    tokens[0],
+					Path:     "/",
+					HttpOnly: true,
+					Secure:   true,
+					SameSite: http.SameSiteStrictMode,
+					MaxAge:   86400,
+				})
+			}
+			return nil
+		}))
 
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{"localhost:2379"},
