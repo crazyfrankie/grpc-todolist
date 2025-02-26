@@ -17,7 +17,6 @@ message Task {
 message AddTaskRequest {
   string title = 1;
   string content = 2;
-  int32 user_id = 3;
 }
 
 message AddTaskResponse {
@@ -25,7 +24,6 @@ message AddTaskResponse {
 }
 
 message ListTasksRequest {
-  int32 user_id = 1;
 }
 
 message ListTasksResponse {
@@ -36,7 +34,6 @@ message UpdateTaskRequest {
   int32 id = 1;
   string content = 2;
   string title = 3;
-  int32 user_id = 4;
 }
 
 message UpdateTaskResponse {
@@ -45,14 +42,12 @@ message UpdateTaskResponse {
 
 message DeleteTaskRequest {
   int32 id = 1;
-  int32 user_id = 2;
 }
 
 message DeleteTaskResponse {
 }
 
 message RecycleBinRequest {
-  int32 user_id = 1;
 }
 
 message RecycleBinResponse {
@@ -61,7 +56,6 @@ message RecycleBinResponse {
 
 message RestoreTaskRequest {
   int32 id = 1;
-  int32 user_id = 2;
 }
 
 message RestoreTaskResponse {
@@ -77,7 +71,7 @@ service TaskService {
   }
   rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
     option (google.api.http) = {
-      get: "/api/tasks/{user_id}"
+      get: "/api/tasks"
     };
   }
   rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse) {
@@ -94,7 +88,7 @@ service TaskService {
   }
   rpc RecycleBin(RecycleBinRequest) returns (RecycleBinResponse) {
     option (google.api.http) = {
-      get: "/api/tasks/recycle/{user_id}"
+      get: "/api/tasks/recycle"
     };
   }
   rpc RestoreTask(RestoreTaskRequest) returns (RestoreTaskResponse) {

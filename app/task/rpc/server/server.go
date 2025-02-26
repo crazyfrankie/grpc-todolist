@@ -25,7 +25,7 @@ func (t *TaskServer) RegisterServer(s *grpc.Server) {
 }
 
 func (t *TaskServer) AddTask(ctx context.Context, request *task.AddTaskRequest) (*task.AddTaskResponse, error) {
-	err := t.svc.AddTask(ctx, request.GetTitle(), request.GetContent(), int(request.GetUserId()))
+	err := t.svc.AddTask(ctx, request.GetTitle(), request.GetContent())
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (t *TaskServer) AddTask(ctx context.Context, request *task.AddTaskRequest) 
 }
 
 func (t *TaskServer) ListTasks(ctx context.Context, request *task.ListTasksRequest) (*task.ListTasksResponse, error) {
-	tasks, err := t.svc.List(ctx, int(request.GetUserId()))
+	tasks, err := t.svc.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (t *TaskServer) UpdateTask(ctx context.Context, request *task.UpdateTaskReq
 		Id:      int(request.GetId()),
 		Title:   request.GetTitle(),
 		Content: request.GetContent(),
-	}, int(request.GetUserId()))
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (t *TaskServer) UpdateTask(ctx context.Context, request *task.UpdateTaskReq
 }
 
 func (t *TaskServer) DeleteTask(ctx context.Context, req *task.DeleteTaskRequest) (*task.DeleteTaskResponse, error) {
-	err := t.svc.DeleteTask(ctx, int(req.GetId()), int(req.GetUserId()))
+	err := t.svc.DeleteTask(ctx, int(req.GetId()))
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (t *TaskServer) DeleteTask(ctx context.Context, req *task.DeleteTaskRequest
 }
 
 func (t *TaskServer) RecycleBin(ctx context.Context, req *task.RecycleBinRequest) (*task.RecycleBinResponse, error) {
-	tasks, err := t.svc.RecycleBin(ctx, int(req.GetUserId()))
+	tasks, err := t.svc.RecycleBin(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (t *TaskServer) RecycleBin(ctx context.Context, req *task.RecycleBinRequest
 }
 
 func (t *TaskServer) RestoreTask(ctx context.Context, req *task.RestoreTaskRequest) (*task.RestoreTaskResponse, error) {
-	err := t.svc.RestoreTask(ctx, int(req.GetId()), int(req.GetUserId()))
+	err := t.svc.RestoreTask(ctx, int(req.GetId()))
 	if err != nil {
 		return nil, err
 	}

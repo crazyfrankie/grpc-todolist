@@ -35,10 +35,6 @@ func (a *AuthBuild) Auth(next http.Handler) http.HandlerFunc {
 		}
 
 		cookie, err := r.Cookie("todolist_auth")
-		if !cookie.HttpOnly || !cookie.Secure {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 
 		var token string
 		if err == nil {
