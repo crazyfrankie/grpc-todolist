@@ -102,10 +102,10 @@ func main() {
 	//	IgnorePath("/api/user/login").
 	//	IgnorePath("/api/user/register").
 	//	Auth(mux))
-	handler := mws.NewAuthBuilder().
+	handler := mws.Trace("todolist/gateway", mws.NewAuthBuilder().
 		IgnorePath("/api/user/login").
 		IgnorePath("/api/user/register").
-		Auth(mux)
+		Auth(mux))
 	server := &http.Server{
 		Addr:    "0.0.0.0:9091",
 		Handler: handler,
