@@ -44,7 +44,7 @@ func NewServer(u *server.UserServer, client *clientv3.Client) *Server {
 		return nil
 	}
 
-	tp := initTracerProvider("todolist/user")
+	tp := initTracerProvider("todolist/server/user")
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},

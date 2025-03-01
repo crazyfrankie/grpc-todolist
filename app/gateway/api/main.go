@@ -107,7 +107,7 @@ func main() {
 		IgnorePath("/api/user/register").
 		Auth(mux)
 	server := &http.Server{
-		Addr:    "127.0.0.1:9091",
+		Addr:    "0.0.0.0:9091",
 		Handler: handler,
 	}
 
@@ -135,18 +135,18 @@ func main() {
 }
 
 func initUserClient(client *clientv3.Client) user.UserServiceClient {
-	cli := user.NewUserServiceClient(getSharedConn(client, userService))
+	cli := user.NewUserServiceClient(getSharedConn(client, userService, "todolist/client/user"))
 
 	return cli
 }
 
 func initTaskClient(client *clientv3.Client) task.TaskServiceClient {
-	cli := task.NewTaskServiceClient(getSharedConn(client, taskService))
+	cli := task.NewTaskServiceClient(getSharedConn(client, taskService, "todolist/client/task"))
 
 	return cli
 }
 
-func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
+func getSharedConn(cli *clientv3.Client, serviceName string, clientname string) *grpc.ClientConn {
 	config := zap.NewProductionConfig()
 	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	logger, err := config.Build()
@@ -160,7 +160,7 @@ func getSharedConn(cli *clientv3.Client, serviceName string) *grpc.ClientConn {
 		return nil
 	}
 
-	tp := initTracerProvider(serviceName)
+	tp := initTracerProvider(clientname)
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
