@@ -24,8 +24,11 @@ type config struct {
 	Propagators    propagation.TextMapPropagator
 }
 
-func Trace(service string, next http.HandlerFunc) http.HandlerFunc {
+func Trace(service string, next http.HandlerFunc, opts ...Option) http.HandlerFunc {
 	cfg := config{}
+	for _, opt := range opts {
+		opt.apply(&cfg)
+	}
 	if cfg.TracerProvider == nil {
 		cfg.TracerProvider = otel.GetTracerProvider()
 	}
@@ -55,6 +58,38 @@ func Trace(service string, next http.HandlerFunc) http.HandlerFunc {
 
 		next(w, req)
 	}
+}
+
+// Option specifies instrumentation configuration options.
+type Option interface {
+	apply(*config)
+}
+
+type optionFunc func(*config)
+
+func (o optionFunc) apply(c *config) {
+	o(c)
+}
+
+// WithPropagators specifies propagators to use for extracting
+// information from the HTTP requests. If none are specified, global
+// ones will be used.
+func WithPropagators(propagators propagation.TextMapPropagator) Option {
+	return optionFunc(func(cfg *config) {
+		if propagators != nil {
+			cfg.Propagators = propagators
+		}
+	})
+}
+
+// WithTracerProvider specifies a tracer provider to use for creating a tracer.
+// If none is specified, the global provider is used.
+func WithTracerProvider(provider oteltrace.TracerProvider) Option {
+	return optionFunc(func(cfg *config) {
+		if provider != nil {
+			cfg.TracerProvider = provider
+		}
+	})
 }
 
 func Version() string {

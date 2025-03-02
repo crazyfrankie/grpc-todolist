@@ -102,10 +102,16 @@ func main() {
 	//	IgnorePath("/api/user/login").
 	//	IgnorePath("/api/user/register").
 	//	Auth(mux))
+	tp := initTracerProvider("todolist/gateway")
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
 	handler := mws.Trace("todolist/gateway", mws.NewAuthBuilder().
 		IgnorePath("/api/user/login").
 		IgnorePath("/api/user/register").
-		Auth(mux))
+		Auth(mux), mws.WithTracerProvider(tp))
 	server := &http.Server{
 		Addr:    "0.0.0.0:9091",
 		Handler: handler,
