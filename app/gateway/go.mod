@@ -1,4 +1,4 @@
-module github.com/carzyfrankie/app/gateway
+module github.com/crazyfrankie/todolist/app/gateway
 
 go 1.23.6
 

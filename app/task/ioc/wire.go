@@ -42,8 +42,9 @@ func InitDB() *gorm.DB {
 
 func InitRegistry() *clientv3.Client {
 	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{config.GetConf().ETCD.Addr},
-		DialTimeout: 5 * time.Second,
+		Endpoints:        []string{config.GetConf().ETCD.Addr},
+		DialTimeout:      5 * time.Second,
+		AutoSyncInterval: 0,
 	})
 	if err != nil {
 		panic(err)

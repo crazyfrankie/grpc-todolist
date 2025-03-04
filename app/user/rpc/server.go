@@ -32,7 +32,7 @@ type Server struct {
 	client *clientv3.Client
 }
 
-func NewServer(u *server.UserServer, client *clientv3.Client) *Server {
+func NewServer(t *server.UserServer, client *clientv3.Client) *Server {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
@@ -44,20 +44,19 @@ func NewServer(u *server.UserServer, client *clientv3.Client) *Server {
 		return nil
 	}
 
-	tp := initTracerProvider("todolist/server/user")
+	tp := initTracerProvider("todolist/server/task")
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
-
 	s := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			logging.UnaryServerInterceptor(initInterceptor(logger), logging.WithFieldsFromContext(logTraceID)),
 			circuitbreaker.NewInterceptorBuilder().Build()),
 	)
-	u.RegisterServer(s)
+	t.RegisterServer(s)
 
 	return &Server{
 		Server: s,
@@ -111,6 +110,7 @@ func registerServer(cli *clientv3.Client, port string) error {
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	err = em.AddEndpoint(ctx, serviceKey, endpoints.Endpoint{Addr: addr}, clientv3.WithLease(leaseResp.ID))
+	//_, err = cli.Put(ctx, serviceKey, addr, clientv3.WithLease(leaseResp.ID))
 
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -135,7 +135,7 @@ func registerServer(cli *clientv3.Client, port string) error {
 		}
 	}()
 
-	return err
+	return nil
 }
 
 func initInterceptor(l *zap.Logger) logging.Logger {
@@ -149,10 +149,10 @@ func initInterceptor(l *zap.Logger) logging.Logger {
 			switch v := value.(type) {
 			case string:
 				f = append(f, zap.String(key.(string), v))
-			case int:
-				f = append(f, zap.Int(key.(string), v))
 			case bool:
 				f = append(f, zap.Bool(key.(string), v))
+			case int:
+				f = append(f, zap.Int(key.(string), v))
 			default:
 				f = append(f, zap.Any(key.(string), v))
 			}
@@ -161,14 +161,14 @@ func initInterceptor(l *zap.Logger) logging.Logger {
 		logger := l.WithOptions(zap.AddCallerSkip(1)).With(f...)
 
 		switch level {
-		case logging.LevelDebug:
-			logger.Debug(msg)
 		case logging.LevelInfo:
 			logger.Info(msg)
-		case logging.LevelWarn:
-			logger.Warn(msg)
+		case logging.LevelDebug:
+			logger.Debug(msg)
 		case logging.LevelError:
 			logger.Error(msg)
+		case logging.LevelWarn:
+			logger.Warn(msg)
 		default:
 			panic(fmt.Sprintf("unknown level %v", level))
 		}

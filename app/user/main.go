@@ -1,8 +1,14 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/joho/godotenv"
+	"go.uber.org/zap"
+
+	"github.com/crazyfrankie/todolist/app/user/config"
 	"github.com/crazyfrankie/todolist/app/user/ioc"
 )
 
@@ -12,15 +18,24 @@ func main() {
 		panic(err)
 	}
 
+	config.WatchEnvFile(".env")
+
 	server := ioc.InitUser()
 
-	err = server.Serve()
-	if err != nil {
-		panic(err)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := server.Serve(); err != nil {
+			zap.L().Error("Server serve error", zap.Error(err))
+		}
+	}()
+
+	<-quit
+
+	if err := server.ShutDown(); err != nil {
+		zap.L().Error("Server shutdown error", zap.Error(err))
 	}
 
-	err = server.ShutDown()
-	if err != nil {
-		panic(err)
-	}
+	zap.L().Info("Server exited gracefully")
 }

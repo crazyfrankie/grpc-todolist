@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/carzyfrankie/app/gateway/mws"
+	"github.com/crazyfrankie/todolist/app/gateway/mws"
 	"github.com/crazyfrankie/todolist/app/task/rpc_gen/task"
 	"github.com/crazyfrankie/todolist/app/user/rpc_gen/user"
 )

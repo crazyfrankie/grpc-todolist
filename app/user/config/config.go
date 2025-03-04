@@ -8,6 +8,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 var (
@@ -15,12 +16,25 @@ var (
 	conf *Config
 )
 
+type Observer interface {
+	OnConfigChange(*Config)
+}
+
+// AddObserver 添加观察者
+func (c *Config) AddObserver(o Observer) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.observers = append(c.observers, o)
+}
+
 type Config struct {
-	Env    string
-	Server Server `yaml:"server"`
-	MySQL  MySQL  `yaml:"mysql"`
-	JWT    JWT    `yaml:"jwt"`
-	ETCD   ETCD   `yaml:"etcd"`
+	Env       string
+	Server    Server `yaml:"server"`
+	MySQL     MySQL  `yaml:"mysql"`
+	JWT       JWT    `yaml:"jwt"`
+	ETCD      ETCD   `yaml:"etcd"`
+	observers []Observer
+	mu        sync.RWMutex
 }
 
 type Server struct {
@@ -62,20 +76,36 @@ func initConf() {
 	fmt.Printf("%#v", conf)
 
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		fmt.Println("Config file changed:", in.Name)
-		if err := viper.ReadInConfig(); err != nil {
-			fmt.Printf("Error reading config after change: %v\n", err)
-			return
-		}
-		if err := viper.Unmarshal(conf); err != nil {
-			fmt.Printf("Error unmarshalling config: %v\n", err)
+		logger := zap.L()
+		logger.Info("Config file changed", zap.String("file", in.Name))
+
+		newConf := new(Config)
+		if err := viper.Unmarshal(newConf); err != nil {
+			logger.Error("Failed to unmarshal config", zap.Error(err))
 			return
 		}
 
-		fmt.Printf("Config reloaded: %#v\n", conf)
+		// 保存观察者列表
+		conf.mu.RLock()
+		newConf.observers = conf.observers
+		conf.mu.RUnlock()
+
+		// 更新全局配置
+		conf = newConf
+
+		// 通知所有观察者
+		conf.notifyObservers()
 	})
 
 	viper.WatchConfig()
+}
+
+func (c *Config) notifyObservers() {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	for _, observer := range c.observers {
+		observer.OnConfigChange(c)
+	}
 }
 
 func getGoEnv() string {
