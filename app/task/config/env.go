@@ -71,6 +71,7 @@ func WatchEnvFile(envPath string) {
 						continue
 					}
 
+					// 通知观察者
 					if conf != nil {
 						for _, observer := range conf.observers {
 							observer.OnConfigChange(conf, DBChange)

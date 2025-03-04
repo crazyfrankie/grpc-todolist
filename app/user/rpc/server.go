@@ -3,14 +3,16 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/crazyfrankie/framework-plugin/grpcx/interceptor/circuitbreaker"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/naming/endpoints"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/zipkin"
@@ -23,13 +25,18 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/crazyfrankie/todolist/app/user/config"
+	"github.com/crazyfrankie/todolist/app/user/pkg/registry"
 	"github.com/crazyfrankie/todolist/app/user/rpc/server"
 )
 
 type Server struct {
 	*grpc.Server
-	Addr   string
-	client *clientv3.Client
+	Addr     string
+	cli      *clientv3.Client
+	register *registry.ServiceRegistry
+	mu       sync.RWMutex
+	listener net.Listener
+	svc      *server.UserServer
 }
 
 func NewServer(t *server.UserServer, client *clientv3.Client) *Server {
@@ -44,7 +51,7 @@ func NewServer(t *server.UserServer, client *clientv3.Client) *Server {
 		return nil
 	}
 
-	tp := initTracerProvider("todolist/server/task")
+	tp := initTracerProvider("todolist/server/user")
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
@@ -58,10 +65,82 @@ func NewServer(t *server.UserServer, client *clientv3.Client) *Server {
 	)
 	t.RegisterServer(s)
 
-	return &Server{
+	rpcServer := &Server{
 		Server: s,
 		Addr:   config.GetConf().Server.Addr,
-		client: client,
+		cli:    client,
+		svc:    t,
+	}
+	register, err := registry.NewServiceRegistry(rpcServer.cli, rpcServer.Addr)
+	if err != nil {
+		panic(err)
+	}
+	config.GetConf().AddObserver(rpcServer)
+	rpcServer.register = register
+
+	return rpcServer
+}
+
+func (s *Server) OnConfigChange(c *config.Config, changeType config.ConfigChangeType) {
+	if changeType == config.ServerChange && c.Server.Addr != s.Addr {
+		if err := s.register.Unregister(); err != nil {
+			zap.L().Error("Failed to unregister service", zap.Error(err))
+		}
+
+		s.mu.Lock()
+		oldListener := s.listener
+		oldServer := s.Server
+		s.Addr = c.Server.Addr
+		s.mu.Unlock()
+
+		if oldServer != nil {
+			oldServer.GracefulStop()
+		}
+
+		listener, err := net.Listen("tcp", s.Addr)
+		if err != nil {
+			zap.L().Error("Failed to create listener", zap.Error(err))
+			return
+		}
+
+		register, err := registry.NewServiceRegistry(s.cli, s.Addr)
+		if err != nil {
+			zap.L().Error("Failed to create registry", zap.Error(err))
+			listener.Close()
+			return
+		}
+
+		if err := register.Register(); err != nil {
+			zap.L().Error("Failed to register", zap.Error(err))
+			listener.Close()
+			return
+		}
+
+		s.mu.Lock()
+		s.listener = listener
+		s.register = register
+		s.mu.Unlock()
+
+		if oldListener != nil {
+			oldListener.Close()
+		}
+
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			if err := s.Server.Serve(listener); err != nil {
+				zap.L().Error("Server serve error", zap.Error(err))
+			}
+		}()
+
+		<-quit
+
+		if err := s.ShutDown(); err != nil {
+			zap.L().Error("Server shutdown error", zap.Error(err))
+		}
+
+		zap.L().Info("Server exited gracefully")
 	}
 }
 
@@ -71,7 +150,8 @@ func (s *Server) Serve() error {
 		panic(err)
 	}
 
-	err = registerServer(s.client, s.Addr)
+	s.listener = conn
+	err = s.register.Register()
 	if err != nil {
 		return err
 	}
@@ -80,60 +160,12 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) ShutDown() error {
-	err := s.client.Close()
+	err := s.cli.Close()
 	if err != nil {
 		return err
 	}
 
 	s.Server.GracefulStop()
-
-	return nil
-}
-
-func registerServer(cli *clientv3.Client, port string) error {
-	em, err := endpoints.NewManager(cli, "service/user")
-	if err != nil {
-		return err
-	}
-
-	addr := "localhost" + port
-	serviceKey := "service/user/" + addr
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	leaseResp, err := cli.Grant(ctx, 180)
-	if err != nil {
-		log.Fatalf("failed to grant lease: %v", err)
-	}
-
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	err = em.AddEndpoint(ctx, serviceKey, endpoints.Endpoint{Addr: addr}, clientv3.WithLease(leaseResp.ID))
-	//_, err = cli.Put(ctx, serviceKey, addr, clientv3.WithLease(leaseResp.ID))
-
-	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		ch, err := cli.KeepAlive(ctx, leaseResp.ID)
-		if err != nil {
-			log.Fatalf("KeepAlive failed: %v", err)
-		}
-
-		for {
-			select {
-			case _, ok := <-ch:
-				if !ok { // 通道关闭，租约停止
-					log.Println("KeepAlive channel closed")
-					return
-				}
-				fmt.Println("Lease renewed")
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
 
 	return nil
 }

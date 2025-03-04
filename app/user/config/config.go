@@ -16,8 +16,15 @@ var (
 	conf *Config
 )
 
+type ConfigChangeType int
+
+const (
+	ServerChange ConfigChangeType = iota
+	DBChange
+)
+
 type Observer interface {
-	OnConfigChange(*Config)
+	OnConfigChange(*Config, ConfigChangeType)
 }
 
 // AddObserver 添加观察者
@@ -85,27 +92,21 @@ func initConf() {
 			return
 		}
 
-		// 保存观察者列表
 		conf.mu.RLock()
 		newConf.observers = conf.observers
 		conf.mu.RUnlock()
 
-		// 更新全局配置
+		oldConf := conf
 		conf = newConf
 
-		// 通知所有观察者
-		conf.notifyObservers()
+		if oldConf.Server.Addr != conf.Server.Addr {
+			for _, observer := range conf.observers {
+				observer.OnConfigChange(conf, ServerChange)
+			}
+		}
 	})
 
 	viper.WatchConfig()
-}
-
-func (c *Config) notifyObservers() {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	for _, observer := range c.observers {
-		observer.OnConfigChange(c)
-	}
 }
 
 func getGoEnv() string {

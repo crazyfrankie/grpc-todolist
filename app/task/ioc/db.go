@@ -8,8 +8,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"github.com/crazyfrankie/todolist/app/user/biz/repository/dao"
-	"github.com/crazyfrankie/todolist/app/user/config"
+	"github.com/crazyfrankie/todolist/app/task/biz/repository/dao"
+	"github.com/crazyfrankie/todolist/app/task/config"
 )
 
 var (
@@ -58,7 +58,7 @@ func (p *DBProvider) refreshConnection() {
 		panic(err)
 	}
 
-	db.AutoMigrate(&dao.User{})
+	db.AutoMigrate(&dao.Task{})
 
 	p.mu.Lock()
 	oldDB := p.db
