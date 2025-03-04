@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/crazyfrankie/framework-plugin/grpcx/interceptor/circuitbreaker"
@@ -36,7 +33,6 @@ type Server struct {
 	register *registry.ServiceRegistry
 	mu       sync.RWMutex
 	listener net.Listener
-	svc      *server.UserServer
 }
 
 func NewServer(t *server.UserServer, client *clientv3.Client) *Server {
@@ -69,7 +65,6 @@ func NewServer(t *server.UserServer, client *clientv3.Client) *Server {
 		Server: s,
 		Addr:   config.GetConf().Server.Addr,
 		cli:    client,
-		svc:    t,
 	}
 	register, err := registry.NewServiceRegistry(rpcServer.cli, rpcServer.Addr)
 	if err != nil {
@@ -125,22 +120,11 @@ func (s *Server) OnConfigChange(c *config.Config, changeType config.ConfigChange
 			oldListener.Close()
 		}
 
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 		go func() {
 			if err := s.Server.Serve(listener); err != nil {
 				zap.L().Error("Server serve error", zap.Error(err))
 			}
 		}()
-
-		<-quit
-
-		if err := s.ShutDown(); err != nil {
-			zap.L().Error("Server shutdown error", zap.Error(err))
-		}
-
-		zap.L().Info("Server exited gracefully")
 	}
 }
 
