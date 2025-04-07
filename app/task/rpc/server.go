@@ -23,7 +23,6 @@ import (
 	"github.com/crazyfrankie/framework-plugin/grpcx/interceptor/circuitbreaker"
 	"github.com/crazyfrankie/todolist/app/task/config"
 	"github.com/crazyfrankie/todolist/app/task/pkg/registry"
-	"github.com/crazyfrankie/todolist/app/task/rpc/server"
 )
 
 type Server struct {
@@ -35,12 +34,12 @@ type Server struct {
 	listener net.Listener
 }
 
-func NewServer(t *server.TaskServer, client *clientv3.Client) *Server {
-	s := grpc.NewServer(grpcServerOption()...)
-	t.RegisterServer(s)
+func NewServer(client *clientv3.Client, registrar func(grpc.ServiceRegistrar)) *Server {
+	srv := grpc.NewServer(grpcServerOption()...)
+	registrar(srv)
 
 	rpcServer := &Server{
-		Server: s,
+		Server: srv,
 		Addr:   config.GetConf().Server.Addr,
 		cli:    client,
 	}

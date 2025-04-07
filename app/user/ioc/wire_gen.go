@@ -12,17 +12,28 @@ import (
 	"github.com/crazyfrankie/todolist/app/user/biz/service"
 	"github.com/crazyfrankie/todolist/app/user/rpc"
 	"github.com/crazyfrankie/todolist/app/user/rpc/server"
+	"github.com/crazyfrankie/todolist/app/user/rpc_gen/user"
+	"google.golang.org/grpc"
 )
 
 // Injectors from wire.go:
 
 func InitUser() *rpc.Server {
+	client := InitRegistry()
 	db := InitDB()
 	userDao := dao.NewUserDao(db)
 	userRepo := repository.NewUserRepo(userDao)
 	userService := service.NewUserService(userRepo)
 	userServer := server.NewUserServer(userService)
-	client := InitRegistry()
-	rpcServer := rpc.NewServer(userServer, client)
+	v := registerService(userServer)
+	rpcServer := rpc.NewServer(client, v)
 	return rpcServer
+}
+
+// wire.go:
+
+func registerService(u *server.UserServer) func(grpc.ServiceRegistrar) {
+	return func(s grpc.ServiceRegistrar) {
+		user.RegisterUserServiceServer(s, u)
+	}
 }
