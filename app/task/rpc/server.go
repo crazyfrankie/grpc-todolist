@@ -36,6 +36,25 @@ type Server struct {
 }
 
 func NewServer(t *server.TaskServer, client *clientv3.Client) *Server {
+	s := grpc.NewServer(grpcServerOption()...)
+	t.RegisterServer(s)
+
+	rpcServer := &Server{
+		Server: s,
+		Addr:   config.GetConf().Server.Addr,
+		cli:    client,
+	}
+	register, err := registry.NewServiceRegistry(rpcServer.cli, rpcServer.Addr)
+	if err != nil {
+		panic(err)
+	}
+	config.GetConf().AddObserver(rpcServer)
+	rpcServer.register = register
+
+	return rpcServer
+}
+
+func grpcServerOption() []grpc.ServerOption {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		panic(err)
@@ -53,27 +72,16 @@ func NewServer(t *server.TaskServer, client *clientv3.Client) *Server {
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
-	s := grpc.NewServer(
+
+	srcOpts := []grpc.ServerOption{
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			logging.UnaryServerInterceptor(initInterceptor(logger), logging.WithFieldsFromContext(logTraceID)),
-			circuitbreaker.NewInterceptorBuilder().Build()),
-	)
-	t.RegisterServer(s)
-
-	rpcServer := &Server{
-		Server: s,
-		Addr:   config.GetConf().Server.Addr,
-		cli:    client,
+			circuitbreaker.NewInterceptorBuilder().Build(),
+		),
 	}
-	register, err := registry.NewServiceRegistry(rpcServer.cli, rpcServer.Addr)
-	if err != nil {
-		panic(err)
-	}
-	config.GetConf().AddObserver(rpcServer)
-	rpcServer.register = register
 
-	return rpcServer
+	return srcOpts
 }
 
 func (s *Server) OnConfigChange(c *config.Config, changeType config.ConfigChangeType) {
