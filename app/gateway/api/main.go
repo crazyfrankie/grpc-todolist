@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/proto"
 	"log"
 	"net/http"
 	"os"
@@ -14,9 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/crazyfrankie/todolist/app/gateway/mws"
-	"github.com/crazyfrankie/todolist/app/task/rpc_gen/task"
-	"github.com/crazyfrankie/todolist/app/user/rpc_gen/user"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -32,6 +27,12 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/crazyfrankie/todolist/app/gateway/mws"
+	"github.com/crazyfrankie/todolist/app/task/rpc_gen/task"
+	"github.com/crazyfrankie/todolist/app/user/rpc_gen/user"
 )
 
 var (
@@ -181,7 +182,7 @@ func grpcClientOption(cli *clientv3.Client, clientname string) []grpc.DialOption
 	}
 	logTraceID := func(ctx context.Context) logging.Fields {
 		if span := oteltrace.SpanContextFromContext(ctx); span.IsSampled() {
-			return logging.Fields{"traceID", span.SpanID().String()}
+			return logging.Fields{"traceID", span.TraceID().String()}
 		}
 		return nil
 	}

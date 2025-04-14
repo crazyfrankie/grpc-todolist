@@ -60,7 +60,7 @@ func grpcServerOption() []grpc.ServerOption {
 	}
 	logTraceID := func(ctx context.Context) logging.Fields {
 		if span := oteltrace.SpanContextFromContext(ctx); span.IsSampled() {
-			return logging.Fields{"traceID", span.SpanID().String()}
+			return logging.Fields{"traceID", span.TraceID().String()}
 		}
 		return nil
 	}
