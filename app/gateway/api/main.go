@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"log"
 	"net/http"
 	"os"
@@ -72,10 +73,16 @@ func main() {
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
-	handler := mws.Trace("todolist/gateway", mws.NewAuthBuilder().
+	// use otelhttp
+	handler := otelhttp.NewHandler(mws.NewAuthBuilder().
 		IgnorePath("/api/user/login").
 		IgnorePath("/api/user/register").
-		Auth(mux), mws.WithTracerProvider(tp))
+		Auth(mux), "todolist/gateway")
+
+	//handler := mws.Trace("todolist/gateway", mws.NewAuthBuilder().
+	//	IgnorePath("/api/user/login").
+	//	IgnorePath("/api/user/register").
+	//	Auth(mux), mws.WithTracerProvider(tp))
 	server := &http.Server{
 		Addr:    "0.0.0.0:9091",
 		Handler: handler,
